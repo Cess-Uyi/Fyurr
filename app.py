@@ -206,25 +206,37 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-  # TODO: Complete this endpoint for taking a venue_id, and using
-  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  # TODO: Complete this endpoint for taking a venue_id, and using SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   
-  # copied
-  #   you can get the venue first venue = Venue.query.get(Venue_id)
-  # then delete using db.session.delete(venue)
-  # Then commit the change.
-  # NB: change the methods to GET instead of DELETE and also add int to your url like venues/<int:venue_id>/delete
-  
-  # since you are making an API call to delete the venue, please chain a method to the fetch call to remove the element from the DOM manually, also your endpoint in the python backend should return a JSONresponse for example return ('', 204) , you can do something base on the status of the response. On failure, you can also return a bad request error return ('',400)
-  
-  #  To delete the element, assign it a unique id then get it using document.getElementById by its Id and call .remove() on it
-  
-  #  venue_id is empty and it shouldn't be
-  # copied
+  error = False
+  try:
+      venue = Venue.query.get(Venue.id == venue_id)
+      db.session.delete(venue)
+      db.session.commit()
+  except:
+    db.session.rollback()
+    error = True
+  finally:
+    db.session.close()
+  if error:
+    abort(500)
+  else:
+    return render_template('pages/home.html')
 
-  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-  # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that clicking that button delete it from the db then redirect the user to the homepage
+  
+@app.route('/venues/<int:venue_id>/edit', methods=['GET'])
+def edit_venue(venue_id):
+  form = VenueForm()
+  # TODO: populate form with values from venue with ID <venue_id>
+  venue= Venue.query.get(Venue.id == venue_id)
+  return render_template('forms/edit_venue.html', form=form, venue=venue)
+
+@app.route('/venues/<int:venue_id>/edit', methods=['POST'])
+def edit_venue_submission(venue_id):
+  # TODO: take values from the form submitted, and update existing venue record with ID <venue_id> using the new attributes
+  
+  return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -363,32 +375,6 @@ def edit_artist_submission(artist_id):
   # artist record with ID <artist_id> using the new attributes
 
   return redirect(url_for('show_artist', artist_id=artist_id))
-
-@app.route('/venues/<int:venue_id>/edit', methods=['GET'])
-def edit_venue(venue_id):
-  form = VenueForm()
-  venue={
-    "id": 1,
-    "name": "The Musical Hop",
-    "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-    "address": "1015 Folsom Street",
-    "city": "San Francisco",
-    "state": "CA",
-    "phone": "123-123-1234",
-    "website": "https://www.themusicalhop.com",
-    "facebook_link": "https://www.facebook.com/TheMusicalHop",
-    "seeking_talent": True,
-    "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-    "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
-  }
-  # TODO: populate form with values from venue with ID <venue_id>
-  return render_template('forms/edit_venue.html', form=form, venue=venue)
-
-@app.route('/venues/<int:venue_id>/edit', methods=['POST'])
-def edit_venue_submission(venue_id):
-  # TODO: take values from the form submitted, and update existing
-  # venue record with ID <venue_id> using the new attributes
-  return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Create Artist
 #  ----------------------------------------------------------------
