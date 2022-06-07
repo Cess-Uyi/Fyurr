@@ -140,23 +140,24 @@ def venues():
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for Hop should return "The Musical Hop".
-  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }
+  # search for Hop should return "The Musical Hop".
+  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"  }
+  
+  search_term = request.form.get('search_term', '')
+  response = db.session.query(Venue).filter(Venue.name.ilike(f'%{search_term}%')).all()
+  count = len(response)
+  response = {
+      "count": count,
+      "data": response
+    }
+  
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
-  venue = Venue.query.filter(Venue.id == venue_id).first()
+  venue= Venue.query.get(venue_id)
   
   return render_template('pages/show_venue.html', venue=venue)
 
@@ -186,7 +187,7 @@ def create_venue_submission():
     )
 
     try:
-      error: False
+      error = False
       db.session.add(new_venue)
       db.session.commit()
       # on successful db insert, flash success
@@ -210,9 +211,10 @@ def delete_venue(venue_id):
   
   error = False
   try:
-      venue = Venue.query.get(Venue.id == venue_id)
-      db.session.delete(venue)
-      db.session.commit()
+    venue = Venue.query.get(venue_id)
+    db.session.delete(venue)
+    db.session.commit()
+    flash('Venue successfully deleted!')
   except:
     db.session.rollback()
     error = True
@@ -229,14 +231,40 @@ def delete_venue(venue_id):
 def edit_venue(venue_id):
   form = VenueForm()
   # TODO: populate form with values from venue with ID <venue_id>
-  venue= Venue.query.get(Venue.id == venue_id)
+  venue= Venue.query.get(venue_id)
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing venue record with ID <venue_id> using the new attributes
   
-  return redirect(url_for('show_venue', venue_id=venue_id))
+  try:
+    form = VenueForm()
+    venue= Venue.query.get(venue_id)
+    print(venue)
+    
+    venue.name = request.form['name'],
+    venue.city = request.form['city'],
+    venue.state = request.form['state'],
+    venue.address = request.form['address'],
+    venue.phone = request.form['phone'],
+    venue.genres = request.form.getlist('genres'),
+    venue.image_link = request.form['image_link'],
+    venue.facebook_link = request.form['facebook_link'],
+    venue.website_link = request.form['website_link'],
+    venue.seeking_talent = True if 'seeking_talent' in request.form else False,
+    venue.seeking_description = request.form['seeking_description']
+
+    db.session.commit()
+    flash('Venue ' + request.form['name'] + ' has been successfully update!')
+    return redirect(url_for('venues'))
+  except:
+    flash('Venue ' + request.form['name'] + ' has been successfully update!')
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close()
+    return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Artists
 #  ----------------------------------------------------------------
